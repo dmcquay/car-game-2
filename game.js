@@ -38,9 +38,11 @@ for (let imageName of Object.keys(images)) {
     imageMeta.image.src = imageMeta.src
 }
 
-const pixelsPerSecond = 300
-const laneChangePixelsPerSecond = 900
-const startTime = new Date().getTime()
+const INITIAL_PIXELS_PER_SECOND = 300
+let pixelsPerSecond = INITIAL_PIXELS_PER_SECOND
+const laneChangePixelsPerSecond = 1200
+let lastMainLoopTime = new Date().getTime()
+let offsetPx = 0
 
 const laneWidth = carWidth * 1.5
 const laneCount = 3
@@ -52,37 +54,40 @@ let currentLane = 0
 const defaultCarX = (canvas.width / 2) - (carWidth / 2)
 const car = {
     x: defaultCarX,
-    y: ((canvas.height / 4) * 3) - (carHeight / 2)
+    y: canvas.height - carHeight - 100
 }
 
 let obstacles = []
 
 let gameOver = false
+let paused = false
 
 const obstacleGroups = [
     [
         {offsetPx: 0, lane: -1, type: 'box'},
-        {offsetPx: -400, lane: 0, type: 'box'},
-        {offsetPx: -800, lane: 1, type: 'box'},
-        {offsetPx: -800, lane: -1, type: 'box'}
+        {offsetPx: -500, lane: 0, type: 'box'},
+        {offsetPx: -1000, lane: 1, type: 'box'},
+        {offsetPx: -1000, lane: -1, type: 'box'}
     ],
     [
         {offsetPx: 0, lane: -1, type: 'box'},
-        {offsetPx: -400, lane: 0, type: 'dog'},
+        {offsetPx: -500, lane: 0, type: 'dog'},
         {offsetPx: -500, lane: 1, type: 'box'},
-        {offsetPx: -900, lane: 1, type: 'box'},
-        {offsetPx: -850, lane: -1, type: 'dog'}
+        {offsetPx: -100, lane: 1, type: 'box'},
+        {offsetPx: -950, lane: -1, type: 'dog'}
     ]
 ]
 
-function addObstacles() {
-    const elapsedTime = new Date().getTime() - startTime
-    const offsetPixels = parseInt((elapsedTime / 1000) * pixelsPerSecond)
+function updateOffsetPx(elapsedMs) {
+    if (paused) return
+    offsetPx += (elapsedMs / 1000) * pixelsPerSecond
+}
 
+function addObstacles() {
     const farthestObstacleOffsetPx = obstacles.length
         ? obstacles[obstacles.length - 1].offsetPx
         : 0
-    if (farthestObstacleOffsetPx + offsetPixels < -2000) return
+    if (farthestObstacleOffsetPx + offsetPx < -2000) return
 
     const gapPx = 1000
     const addToOffsetPx = farthestObstacleOffsetPx - gapPx
@@ -96,67 +101,80 @@ function addObstacles() {
 }
 
 function removeObstacles() {
-    const elapsedTime = new Date().getTime() - startTime
-    const offsetPixels = parseInt((elapsedTime / 1000) * pixelsPerSecond)
     let i
     for (i = 0; i < obstacles.length; i++) {
-        if (obstacles[i].offsetPx + offsetPixels <= canvas.height) break
+        if (obstacles[i].offsetPx + offsetPx <= canvas.height) break
     }
     if (i === 0) return
     obstacles = obstacles.slice(i)
 }
 
 function detectCollision() {
-    const elapsedTime = new Date().getTime() - startTime
-    const offsetPixels = parseInt((elapsedTime / 1000) * pixelsPerSecond)
+    const carTop = car.y
+    const carBottom = car.y + carHeight
+    const carLeft = car.x
+    const carRight = car.x + carWidth
 
     for (let obstacle of obstacles) {
-        if (obstacle.lane !== currentLane) continue
         const image = images[`obstacle-${obstacle.type}`]
-        const obstacleTop = obstacle.offsetPx + offsetPixels
-        const obstacleBottom = obstacleTop + image.height
-        const carTop = car.y
-        const carBottom = car.y + carHeight
 
-        if (obstacleBottom >= carTop && obstacleTop <= carBottom) {
-            gameOver = true
-            break
-        }
+        const middleOfLaneX = (canvas.width / 2) + (obstacle.lane * laneWidth)
+
+        const obstacleTop = obstacle.offsetPx + offsetPx
+        const obstacleBottom = obstacleTop + image.height
+        const obstacleLeft = middleOfLaneX - (image.width / 2)
+        const obstacleRight = middleOfLaneX + (image.width / 2)
+
+        if (obstacleTop > carBottom) continue
+        if (obstacleBottom < carTop) continue
+        if (obstacleRight < carLeft) continue
+        if (obstacleLeft > carRight) continue
+
+        gameOver = true
+        break
     }
+}
+
+function adjustSpeed(elapsedMs) {
+    if (paused) return
+    pixelsPerSecond += elapsedMs / 100
+}
+
+function changeLanes(elapsedMs) {
+    const targetCarX = defaultCarX + (currentLane * laneWidth)
+    const maxLaneChangeMovementPx = (elapsedMs / 1000) * laneChangePixelsPerSecond
+    const desiredLaneChangeMovementPx = Math.abs(car.x - targetCarX)
+    const actualLaneChangeMovementPx = Math.min(desiredLaneChangeMovementPx, maxLaneChangeMovementPx)
+    if (targetCarX < car.x) car.x -= actualLaneChangeMovementPx
+    else car.x += actualLaneChangeMovementPx
 }
 
 const leftArrowKeyCode = 37
 const rightArrowKeyCode = 39
+const spaceKeyCode = 32
 
 window.addEventListener('keydown', evt => {
     if (evt.keyCode === leftArrowKeyCode) {
         currentLane = Math.max(currentLane - 1, (laneCount - 1) / 2 * -1)
     } else if (evt.keyCode === rightArrowKeyCode) {
         currentLane = Math.min(currentLane + 1, (laneCount - 1) / 2)
+    } else if (evt.keyCode === spaceKeyCode) {
+        paused = !paused
     }
 })
 
-let lastUpdateTime = new Date().getTime()
-function update() {
-    const timeSinceLastUpdate = new Date().getTime() - lastUpdateTime
-
+function update(elapsedMs) {
+    updateOffsetPx(elapsedMs)
+    adjustSpeed(elapsedMs)
     addObstacles()
     removeObstacles()
     detectCollision()
-
-    const targetCarX = defaultCarX + (currentLane * laneWidth)
-    const maxLaneChangeMovementPx = (timeSinceLastUpdate / 1000) * laneChangePixelsPerSecond
-    const desiredLaneChangeMovementPx = Math.abs(car.x - targetCarX)
-    const actualLaneChangeMovementPx = Math.min(desiredLaneChangeMovementPx, maxLaneChangeMovementPx)
-    if (targetCarX < car.x) car.x -= actualLaneChangeMovementPx
-    else car.x += actualLaneChangeMovementPx
-
-    lastUpdateTime = new Date().getTime()
+    changeLanes(elapsedMs)
 }
 
 function renderGameOver() {
     ctx.font = "30px Arial"
-    ctx.fillText("GAME OVER", 10, 50)
+    ctx.fillText("GAME OVER", 10, 110)
 }
 
 function render() {
@@ -184,9 +202,7 @@ function render() {
     ctx.lineWidth = laneLineWidth
     ctx.stroke()
 
-    const elapsedTime = new Date().getTime() - startTime
-    const offsetPixels = parseInt((elapsedTime / 1000) * pixelsPerSecond)
-    const dashedLineOffset = offsetPixels % 90
+    const dashedLineOffset = offsetPx % 90
 
     // draw dashed lines to the right of all lanes except last
     for (let laneNum = 1; laneNum < laneCount; laneNum++) {
@@ -203,22 +219,30 @@ function render() {
     for (let obstacle of obstacles) {
         const image = images[`obstacle-${obstacle.type}`]
         if (!image.ready) continue
-        if (obstacle.offsetPx + offsetPixels + image.height < 0) continue
-        if (obstacle.offsetPx + offsetPixels > canvas.height) continue
+        if (obstacle.offsetPx + offsetPx + image.height < 0) continue
+        if (obstacle.offsetPx + offsetPx > canvas.height) continue
         const middleOfLaneX = (canvas.width / 2) + (obstacle.lane * laneWidth)
         const x = middleOfLaneX - (image.width / 2)
-        ctx.drawImage(image.image, x, obstacle.offsetPx + offsetPixels, image.width, image.height)
+        ctx.drawImage(image.image, x, obstacle.offsetPx + offsetPx, image.width, image.height)
     }
 
     // draw car
     if (images.car.ready) ctx.drawImage(images.car.image, car.x, car.y, carWidth, carHeight)
+
+    // draw score
+    ctx.font = "30px Arial"
+    ctx.fillText(`Distance: ${parseInt(offsetPx / 100)}`, 10, 30)
+    ctx.fillText(`Speed: ${parseInt(pixelsPerSecond / 10)}`, 10, 70)
 }
 
 function main() {
+    const now = new Date().getTime()
+    const elapsedMs = now - lastMainLoopTime
+    lastMainLoopTime = now
     if (gameOver) {
         renderGameOver()
     } else {
-        update()
+        update(elapsedMs)
         render()
         requestAnimationFrame(main)
     }
