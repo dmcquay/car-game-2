@@ -11,10 +11,16 @@ const carWidth = 100
 const obstacleWidth = 100
 
 const images = {
-    car: {
+    carRed: {
         ready: false,
         src: 'red-car-top-view-hi.png',
         height: 200,
+        width: carWidth
+    },
+    car: {
+        ready: false,
+        src: 'car-green.png',
+        height: 202,
         width: carWidth
     },
     'obstacle-box': {
@@ -27,6 +33,12 @@ const images = {
         ready: false,
         src: 'obstacle-dog.png',
         height: 134,
+        width: obstacleWidth
+    },
+    'obstacle-bomb': {
+        ready: false,
+        src: 'obstacle-bomb.png',
+        height: 110,
         width: obstacleWidth
     }
 }
@@ -64,7 +76,7 @@ let paused = false
 
 const obstacleGroups = [
     [
-        {offsetPx: 0, lane: -1, type: 'box'},
+        {offsetPx: 0, lane: -1, type: 'bomb'},
         {offsetPx: -500, lane: 0, type: 'box'},
         {offsetPx: -1000, lane: 1, type: 'box'},
         {offsetPx: -1000, lane: -1, type: 'box'}
@@ -72,9 +84,38 @@ const obstacleGroups = [
     [
         {offsetPx: 0, lane: -1, type: 'box'},
         {offsetPx: -500, lane: 0, type: 'dog'},
+        {offsetPx: -500, lane: 1, type: 'bomb'},
+        {offsetPx: -1000, lane: 1, type: 'box'},
+        {offsetPx: -1050, lane: -1, type: 'dog'}
+    ],
+    [
+        {offsetPx: 0, lane: -1, type: 'box'},
+        {offsetPx: -100, lane: 0, type: 'box'},
+        {offsetPx: -600, lane: 1, type: 'dog'},
+        {offsetPx: -1100, lane: 0, type: 'bomb'},
+        {offsetPx: -1100, lane: -1, type: 'bomb'}
+    ],
+    [
+        {offsetPx: 0, lane: -1, type: 'bomb'},
+        {offsetPx: 0, lane: 0, type: 'bomb'},
+        {offsetPx: -500, lane: 0, type: 'box'},
         {offsetPx: -500, lane: 1, type: 'box'},
-        {offsetPx: -100, lane: 1, type: 'box'},
-        {offsetPx: -950, lane: -1, type: 'dog'}
+        {offsetPx: -1000, lane: -1, type: 'dog'},
+        {offsetPx: -1500, lane: -1, type: 'box'},
+        {offsetPx: -1500, lane: 1, type: 'dog'},
+        {offsetPx: -2000, lane: 0, type: 'box'},
+        {offsetPx: -2500, lane: 0, type: 'box'},
+        {offsetPx: -2500, lane: 1, type: 'bomb'}
+    ],
+    [
+        {offsetPx: 0, lane: -1, type: 'bomb'},
+        {offsetPx: 0, lane: 0, type: 'bomb'},
+        {offsetPx: -500, lane: 0, type: 'box'},
+        {offsetPx: -500, lane: 1, type: 'box'},
+        {offsetPx: -1000, lane: -1, type: 'dog'},
+        {offsetPx: -1500, lane: 0, type: 'bomb'},
+        {offsetPx: -2000, lane: -1, type: 'box'},
+        {offsetPx: -2000, lane: 0, type: 'dog'}
     ]
 ]
 
