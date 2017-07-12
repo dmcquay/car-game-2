@@ -11,18 +11,12 @@ const carWidth = 100
 const obstacleWidth = 100
 
 const images = {
-    carRed: {
-        ready: false,
-        src: 'red-car-top-view-hi.png',
-        height: 200,
-        width: carWidth,
-        vector: [[52.1575564, 0.824458905], [69.538941, 2.77324667], [81.0936754, 8.75103112], [90.6686442, 19.6036012], [94.5540163, 31.0503825], [101.11287, 82.1769611], [93.7251244, 171.064588], [87.8121118, 195.452597], [77.1501024, 199.192467], [51.5426932, 200.795805], [27.2645149, 199.477839], [14.6649824, 195.668503], [7.67431649, 168.586361], [1.47029994, 88.1575617], [8.62899721, 26.9772659], [14.3035743, 15.1484245], [25.6161183, 6.15076999], [39.5570852, 1.85142125]]
-    },
     car: {
         ready: false,
-        src: 'car-green.png',
+        src: 'car.png',
         height: 202,
-        width: carWidth
+        width: carWidth,
+        vector: [[52, 0], [69, 2], [81, 8], [90, 19], [94, 31], [101, 82], [93, 171], [87, 195], [77, 199], [51, 200], [27, 199], [14, 195], [7, 168], [1, 88], [8, 26], [14, 15], [25, 6], [39, 1]]
     },
     'obstacle-box': {
         ready: false,
@@ -36,14 +30,14 @@ const images = {
         src: 'obstacle-dog.png',
         height: 134,
         width: obstacleWidth,
-        vector: [[65.5047458, 0.982169569], [95.5047327, 41.3997293], [100.879745, 50.7020375], [100.879745, 59.0069918], [75.0221695, 124.612048], [71.6148317, 127.3286], [31.9979159, 135.48631], [27.3148396, 132.6645], [1.10468188, 56.4698941], [2.9302879, 48.3599241], [9.78234979, 37.718033]]
+        vector: [[65, 0], [95, 41], [100, 50], [100, 59], [75, 124], [71, 127], [31, 135], [27, 132], [1, 56], [2, 48], [9, 37]]
     },
     'obstacle-bomb': {
         ready: false,
         src: 'obstacle-bomb.png',
         height: 110,
         width: obstacleWidth,
-        vector: [[100.99907, 1], [100.99907, 11.5574898], [89.1815244, 71.8131541], [84.5282014, 82.8562424], [74.3510312, 95.0712154], [56.9458133, 103.513917], [40.3861158, 104.620003], [28.5356706, 101.027364], [17.5860172, 95.2284756], [10.0256833, 87.2286027], [3.91885478, 75.692678], [1, 62.8684039], [2.2034683, 48.7761783], [6.56135271, 36.9875844], [14.794813, 26.655786], [26.132024, 18.5466863], [85.2513352, 1]]
+        vector: [[100, 1], [100, 11], [89, 71], [84, 82], [74, 95], [56, 103], [40, 104], [28, 101], [17, 95], [10, 87], [3, 75], [1, 62], [2, 48], [6, 36], [14, 26], [26, 18], [85, 1]]
     }
 }
 
@@ -266,17 +260,40 @@ function renderRoad() {
 function renderObstacles() {
     for (let obstacle of obstacles) {
         const image = images[`obstacle-${obstacle.type}`]
-        if (!image.ready) continue
-        if (obstacle.offsetPx + offsetPx + image.height < 0) continue
-        if (obstacle.offsetPx + offsetPx > canvas.height) continue
+
         const middleOfLaneX = (canvas.width / 2) + (obstacle.lane * laneWidth)
         const x = middleOfLaneX - (image.width / 2)
-        ctx.drawImage(image.image, x, obstacle.offsetPx + offsetPx, image.width, image.height)
+        const y = obstacle.offsetPx + offsetPx
+
+        renderImage(image, x, y)
+        renderVector(image.vector, x, y)
     }
 }
 
 function renderCar() {
-    if (images.car.ready) ctx.drawImage(images.car.image, car.x, car.y, carWidth, carHeight)
+    renderImage(images.car, car.x, car.y)
+    renderVector(images.car.vector, car.x, car.y)
+}
+
+function renderImage(image, x, y) {
+    if (!image.ready) return
+    if (y + image.height < 0) return
+    if (y > canvas.height) return
+    ctx.drawImage(image.image, x, y, image.width, image.height)
+}
+
+function renderVector(vector, x, y) {
+    ctx.setLineDash([])
+    ctx.strokeStyle = 'white'
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    const firstPoint = vector[0]
+    ctx.moveTo(firstPoint[0] + x, firstPoint[1] + y)
+    for (let i = 1; i < vector.length; i++) {
+        ctx.lineTo(vector[i][0] + x, vector[i][1] + y)
+    }
+    ctx.closePath()
+    ctx.stroke()
 }
 
 function renderScore() {
