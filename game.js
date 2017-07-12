@@ -222,10 +222,12 @@ function renderGameOver() {
     ctx.fillText("GAME OVER", 10, 110)
 }
 
-function render() {
+function renderBackground() {
     ctx.fillStyle = "green"
     ctx.fillRect(0, 0, canvas.width, canvas.height)
+}
 
+function renderRoad() {
     ctx.fillStyle = "black"
     ctx.fillRect(lanesX, 0, lanesWidth, canvas.height)
 
@@ -259,8 +261,9 @@ function render() {
         ctx.lineWidth = laneLineWidth
         ctx.stroke()
     }
+}
 
-    // draw obstacles
+function renderObstacles() {
     for (let obstacle of obstacles) {
         const image = images[`obstacle-${obstacle.type}`]
         if (!image.ready) continue
@@ -270,14 +273,24 @@ function render() {
         const x = middleOfLaneX - (image.width / 2)
         ctx.drawImage(image.image, x, obstacle.offsetPx + offsetPx, image.width, image.height)
     }
+}
 
-    // draw car
+function renderCar() {
     if (images.car.ready) ctx.drawImage(images.car.image, car.x, car.y, carWidth, carHeight)
+}
 
-    // draw score
+function renderScore() {
     ctx.font = "30px Arial"
     ctx.fillText(`Distance: ${parseInt(offsetPx / 100)}`, 10, 30)
     ctx.fillText(`Speed: ${parseInt(pixelsPerSecond / 10)}`, 10, 70)
+}
+
+function render() {
+    renderBackground()
+    renderRoad()
+    renderObstacles()
+    renderCar()
+    renderScore()
 }
 
 function main() {
