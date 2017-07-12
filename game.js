@@ -210,8 +210,8 @@ function update(elapsedMs) {
     adjustSpeed(elapsedMs)
     addObstacles()
     removeObstacles()
-    detectCollision()
     changeLanes(elapsedMs)
+    detectCollision()
 }
 
 function renderGameOver() {
@@ -282,6 +282,7 @@ function main() {
     const elapsedMs = now - lastMainLoopTime
     lastMainLoopTime = now
     if (gameOver) {
+        render()
         renderGameOver()
     } else {
         update(elapsedMs)
