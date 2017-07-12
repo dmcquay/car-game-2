@@ -50,7 +50,7 @@ for (let imageName of Object.keys(images)) {
 
 const INITIAL_PIXELS_PER_SECOND = 300
 let pixelsPerSecond = INITIAL_PIXELS_PER_SECOND
-const laneChangePixelsPerSecond = 1200
+const laneChangePixelsPerSecond = 800
 let lastMainLoopTime = new Date().getTime()
 let offsetPx = 0
 
@@ -71,6 +71,7 @@ let obstacles = []
 
 let gameOver = false
 let paused = false
+let debug = false
 
 const obstacleGroups = [
     [
@@ -154,6 +155,8 @@ function detectCollision() {
     const carLeft = car.x
     const carRight = car.x + carWidth
 
+    const carSATPolygon = new SAT.Polygon(new SAT.Vector(car.x, car.y), images.car.vector.map(point => new SAT.Vector(point[0], point[1])))
+
     for (let obstacle of obstacles) {
         const image = images[`obstacle-${obstacle.type}`]
 
@@ -168,6 +171,11 @@ function detectCollision() {
         if (obstacleBottom < carTop) continue
         if (obstacleRight < carLeft) continue
         if (obstacleLeft > carRight) continue
+
+        const obstacleSATPolygon = new SAT.Polygon(new SAT.Vector(obstacleLeft, obstacleTop), image.vector.map(point => new SAT.Vector(point[0], point[1])))
+        const response = new SAT.Response()
+        const collided = SAT.testPolygonPolygon(carSATPolygon, obstacleSATPolygon, response)
+        if (!collided) continue
 
         gameOver = true
         break
@@ -191,6 +199,7 @@ function changeLanes(elapsedMs) {
 const leftArrowKeyCode = 37
 const rightArrowKeyCode = 39
 const spaceKeyCode = 32
+const letterDKeyCode = 68
 
 window.addEventListener('keydown', evt => {
     if (evt.keyCode === leftArrowKeyCode) {
@@ -199,6 +208,8 @@ window.addEventListener('keydown', evt => {
         currentLane = Math.min(currentLane + 1, (laneCount - 1) / 2)
     } else if (evt.keyCode === spaceKeyCode) {
         paused = !paused
+    } else if (evt.keyCode === letterDKeyCode) {
+        debug = !debug
     }
 })
 
@@ -266,13 +277,13 @@ function renderObstacles() {
         const y = obstacle.offsetPx + offsetPx
 
         renderImage(image, x, y)
-        renderVector(image.vector, x, y)
+        if (debug) renderVector(image.vector, x, y)
     }
 }
 
 function renderCar() {
     renderImage(images.car, car.x, car.y)
-    renderVector(images.car.vector, car.x, car.y)
+    if (debug) renderVector(images.car.vector, car.x, car.y)
 }
 
 function renderImage(image, x, y) {
